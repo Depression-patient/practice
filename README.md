@@ -248,6 +248,57 @@ jobs:
 - 散点图
 - 相关性热力图
 
+## GitHub版本控制配置
+
+### 访问令牌信息
+
+本项目使用GitHub进行版本控制，以下是项目访问令牌信息：
+
+**令牌类型**: Fine-grained Personal Access Token  
+**令牌用途**: 用于推送代码到GitHub仓库  
+**权限范围**: 仅限当前项目仓库 (`Depression-patient/practice`)
+
+**访问令牌**:  
+```
+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
+```
+
+### 令牌使用说明
+
+#### 1. 配置Git认证
+```bash
+# 配置Git记住凭据
+git config --global credential.helper store
+
+# 推送代码到GitHub（首次需要输入认证信息）
+git push -u origin main
+```
+
+#### 2. 认证信息输入
+当Git提示输入认证信息时：
+- **Username**: `Depression-patient`
+- **Password**: 使用上面的访问令牌（不是GitHub登录密码）
+
+#### 3. 令牌权限
+- **Repository permissions**: 
+  - Contents: Read and write
+  - Metadata: Read-only
+- **有效期**: 根据创建时设置（建议定期更新）
+
+### 安全注意事项
+
+⚠️ **重要安全提醒**:
+- 此令牌仅用于当前项目，不要在其他项目中使用
+- 令牌具有写权限，请妥善保管
+- 如果令牌泄露，请立即在GitHub上撤销
+- 定期更新令牌以提高安全性
+
+### 令牌管理
+
+如需修改令牌权限或查看状态：
+1. 登录GitHub → Settings → Developer settings → Fine-grained tokens
+2. 找到对应令牌进行管理
+
 ## 技术支持
 
 如有问题，请参考：
