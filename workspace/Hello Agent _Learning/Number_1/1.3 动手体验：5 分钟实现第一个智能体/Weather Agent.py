@@ -5,28 +5,58 @@
 基于文档1.3节实现的智能旅行助手
 """
 
-import requests
-import json
-import os
-import re
-from openai import OpenAI
-from tavily import TavilyClient
+import requests  # 用于发送 HTTP 请求
+import os  # 用于文件路径操作
+import re  # 用于正则表达式匹配
+import sys # 便于之后进行扩展,未使用
+from openai import OpenAI  # 用于与 OpenAI API 交互
+from tavily import TavilyClient  # 用于与 Tavily API 交互
 
 # ==================== 系统提示词 ====================
 def load_system_prompt():
     """
-    从外部文件加载系统提示词
+    从外部文件加载系统提示词（多环境兼容版本）
     """
-    prompt_file = "system_prompt.md"
-    try:
-        with open(prompt_file, 'r', encoding='utf-8') as f:
-            prompt_content = f.read().strip()
-        print(f"✅ 成功加载系统提示词文件: {prompt_file}")
-        return prompt_content
-    except FileNotFoundError:
-        print(f"❌ 错误: 未找到提示词文件 {prompt_file}")
-        # 返回默认提示词作为备用
-        return """你是一个智能旅行助手。你的任务是分析用户的请求，并使用可用工具一步步地解决问题。
+    # 获取当前脚本所在的目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 尝试多个可能的文件路径
+    possible_paths = [
+        os.path.join(script_dir, "system_prompt.md"),  # 同目录下
+        "system_prompt.md",  # 当前工作目录
+        os.path.join(os.getcwd(), "system_prompt.md"),  # 绝对路径
+    ]
+    
+    # ==================== 通过打印信息区分 ====================
+    # 通过控制台输出的路径信息可以清晰区分文件是从哪个代码路径加载成功的：
+    # 1. 脚本目录路径：由第20-21行的script_dir计算 + 第24行的os.path.join(script_dir, "system_prompt.md")
+    #    - 输出示例：✅ 成功加载系统提示词文件: d:\...\system_prompt.md
+    # 2. 当前工作目录路径：直接由第25行的"system_prompt.md"提供
+    #    - 输出示例：✅ 成功加载系统提示词文件: system_prompt.md
+    # 3. 绝对路径：由第26行的os.path.join(os.getcwd(), "system_prompt.md")提供
+    #    - 输出示例：✅ 成功加载系统提示词文件: d:\当前工作目录\system_prompt.md
+    # 
+    # 搜索优先级：脚本目录 > 当前工作目录 > 绝对路径
+    # 实际应用场景：
+    # - 从脚本目录运行：通常会从"脚本目录"路径加载成功
+    # - 从其他目录运行：可能会从"当前工作目录"或"绝对路径"加载成功
+    # - 调试时：通过打印信息可以清楚知道文件是从哪个路径找到的
+    
+    for prompt_file in possible_paths:
+        try:
+            with open(prompt_file, 'r', encoding='utf-8') as f:
+                prompt_content = f.read().strip()
+            print(f"✅ 成功加载系统提示词文件: {prompt_file}")
+            return prompt_content
+        except FileNotFoundError:
+            continue
+        except Exception as e:
+            print(f"❌ 错误: 读取提示词文件 {prompt_file} 时发生错误 - {e}")
+            continue
+    
+    # 如果所有路径都失败，返回默认提示词
+    print("⚠️  警告: 未找到提示词文件，使用内置默认提示词")
+    return """你是一个智能旅行助手。你的任务是分析用户的请求，并使用可用工具一步步地解决问题。
 
 # 可用工具:
 - `get_weather(city: str)`: 查询指定城市的实时天气。
@@ -41,9 +71,6 @@ Action: [这里是你要调用的工具，格式为 function_name(arg_name="arg_
 当你收集到足够的信息，能够回答用户的最终问题时，你必须在`Action:`字段后使用 `finish(answer="...")` 来输出最终答案。
 
 请开始吧！"""
-    except Exception as e:
-        print(f"❌ 错误: 读取提示词文件时发生错误 - {e}")
-        return """你是一个智能旅行助手。请根据用户请求使用可用工具解决问题。"""
 
 # 加载系统提示词
 AGENT_SYSTEM_PROMPT = load_system_prompt()
@@ -163,10 +190,10 @@ def main():
     
     # --- 1. 配置LLM客户端 ---
     # 检查是否已配置API密钥，如果没有则等待用户输入
-    API_KEY = "YOUR_API_KEY"
-    BASE_URL = "YOUR_BASE_URL"  # 例如: "https://api.openai.com/v1"
-    MODEL_ID = "YOUR_MODEL_ID"  # 例如: "gpt-3.5-turbo"
-    TAVILY_API_KEY = "YOUR_TAVILY_API_KEY"
+    API_KEY = "sk-5f77f27d6364440aa85c8c410a7c270a"
+    BASE_URL = "https://api.deepseek.com/v1"  # 例如: "https://api.openai.com/v1"
+    MODEL_ID = "deepseek-reasoner"  # 例如: "gpt-3.5-turbo"
+    TAVILY_API_KEY = "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"
     
     # 如果没有配置API密钥，等待用户输入
     if API_KEY == "YOUR_API_KEY":
